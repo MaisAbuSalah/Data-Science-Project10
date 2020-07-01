@@ -14,6 +14,7 @@ import numpy as np
 import psycopg2
 import pandas as pd
 import datetime
+import requests
 from psycopg2.extensions import register_adapter, AsIs
 psycopg2.extensions.register_adapter(np.int64, psycopg2._psycopg.AsIs)
 
@@ -30,118 +31,119 @@ def home():
 @app.route('/get_data_count/<label_name><count>', methods=['GET'])
 
 #get data count
-while True:
-	try:
 		
-		def get_data_count (label_name,count=0):
-			connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
+def get_data_count (label_name,count=0):
+	try:
+		connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
 
-			cursor=connection.cursor()
+		cursor=connection.cursor()
 
-			print("connection is successful and cursor was created!")
+		print("connection is successful and cursor was created!")
 
-			if count = 0:
-				print ("will fetch all data")
+		if count == 0:
+			print ("will fetch all data")
 
-				if label_name == 'positive':
-					get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
-					cursor.execute (get_data_query)
-					get_data_count_cursor = cursor.fetchall()
-					print ("positive records fetched successfully")
+			if label_name == 'positive':
+				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				cursor.execute (get_data_query)
+				get_data_count_cursor = cursor.fetchall()
+				print ("positive records fetched successfully")
 
-					i = 0
-					for entry in get_data_count_cursor:
-						i+=1
+				i = 0
+				for entry in get_data_count_cursor:
+					i+=1
 				print ('total number of positive labels =',i)
 
-				else :
-					get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
-					cursor.execute (get_data_query)
-					get_data_count_cursor = cursor.fetchall()
-					print ("positive records fetched successfully")
+			else:
+				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				cursor.execute (get_data_query)
+				get_data_count_cursor = cursor.fetchall()
+				print ("negative records fetched successfully")
 
-					i = 0
-					for entry in get_data_count_cursor:
-						i+=1
+				i = 0
+				for entry in get_data_count_cursor:
+					i+=1
 				print ('total number of negative labels =',i)
 
-			else:
-				print ("will fetch some data")
+		else:
+			print ("will fetch some data")
+
+			if label_name == 'positive':
 
 				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
 				cursor.execute (get_data_query)
 				get_data_count_cursor = cursor.fetchmany(count)
 
-				if label_name == 'positive':
-					get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
-					cursor.execute (get_data_query)
-					get_data_count_cursor = cursor.fetchall()
 
-					i = 0
-					for entry in get_data_count_cursor:
-						i+=1
+				i = 0
+				for entry in get_data_count_cursor:
+					i+=1
 				print ('total number of positive labels =',i)
 
-				else :
-					get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
-					cursor.execute (get_data_query)
-					get_data_count_cursor = cursor.fetchall()
+			else:
+				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				cursor.execute (get_data_query)
+				get_data_count_cursor = cursor.fetchmany(count)
 
-					i = 0
-					for entry in get_data_count_cursor:
-						i+=1
+				i = 0
+				for entry in get_data_count_cursor:
+					i+=1
 				print ('total number of negative labels =',i)
-
-			return "total number of " + label_name + "= " + i
 
 		cursor.close()
 		connection.close()
 		print ("connection closed successfully")
-		 break;
 
 	except:
-		print('Unexpected Error! Please try again.')
+	print('Unexpected Error! Please try again.')
+	return i
+
+
 
 
 #http://127.0.0.1:3000/get_data_count/label_name count
 @app.route('/get_data/<count><sort_order>', methods=['GET'])
 
 #get data
-while True:
-	try:
+
+
 		
-		def get_data (count,sort_order):
-			connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
+def get_data (count,sort_order):
+	try:
 
-			cursor=connection.cursor()
+		connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
 
-			print("connection is successful and cursor was created!")
+		cursor=connection.cursor()
 
-			if sort_order == ASC:
-				get_data_query = "SELECT data_input.text, data_labeling.classification_num INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp ASC"
-				cursor.execute (get_data_query)
-				get_data_cursor = cursor.fetchall()
-				print ("data fetched and sorted by time stamp ascending")
+		print("connection is successful and cursor was created!")
+
+		if sort_order == ASC:
+			get_data_query = "SELECT data_input.text, data_labeling.classification_num INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp ASC"
+			cursor.execute (get_data_query)
+			get_data_cursor = cursor.fetchall()
+			print ("data fetched and sorted by time stamp ascending")
 
 
-			else :
-				get_data_query = "SELECT data_input.text, data_labeling.classification_num INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp DESC"
-				cursor.execute (get_data_query)
-				get_data_cursor = cursor.fetchall()
-				print ("data fetched and sorted by time stamp descending")
-
-			
-			
-			return get_data_cursor
+		else :
+			get_data_query = "SELECT data_input.text, data_labeling.classification_num INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp DESC"
+			cursor.execute (get_data_query)
+			get_data_cursor = cursor.fetchall()
+			print ("data fetched and sorted by time stamp descending")
 
 		cursor.close()
 		connection.close()
 		print ("connection closed successfully")
 
-		 break;
-
 	except:
-		print('Unexpected Error! Please try again.')
+		print('Unexpected Error! Please try again.')		
+			
+	return get_data_cursor
+
+
+
+	
+
+	
 		
 #start database_service.py on port 3000
 if __name__ == "__main__":
