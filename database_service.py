@@ -9,12 +9,11 @@
 #C) Use error-handling to avoid program crash during execution of A & B
 
 from flask import Flask  
-from Flask import requests
+from flask import request
 import numpy as np
 import psycopg2
 import pandas as pd
 import datetime
-import requests
 from psycopg2.extensions import register_adapter, AsIs
 psycopg2.extensions.register_adapter(np.int64, psycopg2._psycopg.AsIs)
 
@@ -28,7 +27,7 @@ def home():
 	return "<h1> Welcome to my last Data Science Project </h1>"
 
 #http://127.0.0.1:3000/get_data_count/label_name count
-@app.route('/get_data_count/<label_name><count>', methods=['GET'])
+@app.route('/get_data_count/<label_name>/<count>', methods=['GET'])
 
 #get data count
 		
@@ -44,25 +43,24 @@ def get_data_count (label_name,count=0):
 			print ("will fetch all data")
 
 			if label_name == 'positive':
-				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 1"
 				cursor.execute (get_data_query)
 				get_data_count_cursor = cursor.fetchall()
 				print ("positive records fetched successfully")
 
-				i = 0
-				for entry in get_data_count_cursor:
-					i+=1
+				i = len(get_data_count_cursor)
+
 				print ('total number of positive labels =',i)
 
 			else:
-				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 0"
 				cursor.execute (get_data_query)
 				get_data_count_cursor = cursor.fetchall()
 				print ("negative records fetched successfully")
 
-				i = 0
-				for entry in get_data_count_cursor:
-					i+=1
+				i = len(get_data_count_cursor)
+				#for entry in get_data_count_cursor:
+					#i+=1
 				print ('total number of negative labels =',i)
 
 		else:
@@ -70,24 +68,24 @@ def get_data_count (label_name,count=0):
 
 			if label_name == 'positive':
 
-				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 1"
 				cursor.execute (get_data_query)
 				get_data_count_cursor = cursor.fetchmany(count)
 
 
-				i = 0
-				for entry in get_data_count_cursor:
-					i+=1
+				i = len(get_data_count_cursor)
+				#for entry in get_data_count_cursor:
+					#i+=1
 				print ('total number of positive labels =',i)
 
 			else:
-				get_data_query = "SELECT * FROM data_input WHERE label_types.class_name = label_name"
+				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 0"
 				cursor.execute (get_data_query)
 				get_data_count_cursor = cursor.fetchmany(count)
 
-				i = 0
-				for entry in get_data_count_cursor:
-					i+=1
+				i = len(get_data_count_cursor)
+				#for entry in get_data_count_cursor:
+					#i+=1
 				print ('total number of negative labels =',i)
 
 		cursor.close()
@@ -102,7 +100,7 @@ def get_data_count (label_name,count=0):
 
 
 #http://127.0.0.1:3000/get_data_count/label_name count
-@app.route('/get_data/<count><sort_order>', methods=['GET'])
+@app.route('/get_data/<count>/<sort_order>', methods=['GET'])
 
 #get data
 
@@ -118,14 +116,14 @@ def get_data (count,sort_order):
 		print("connection is successful and cursor was created!")
 
 		if sort_order == ASC:
-			get_data_query = "SELECT data_input.text, data_labeling.classification_num INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp ASC"
+			get_data_query = "SELECT data_input.text, data_labeling.classification_num FROM data_input INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp ASC"
 			cursor.execute (get_data_query)
 			get_data_cursor = cursor.fetchall()
 			print ("data fetched and sorted by time stamp ascending")
 
 
 		else :
-			get_data_query = "SELECT data_input.text, data_labeling.classification_num INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp DESC"
+			get_data_query = "SELECT data_input.text, data_labeling.classification_num FROM data_input INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp DESC"
 			cursor.execute (get_data_query)
 			get_data_cursor = cursor.fetchall()
 			print ("data fetched and sorted by time stamp descending")
