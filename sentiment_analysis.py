@@ -13,6 +13,7 @@ psycopg2.extensions.register_adapter(np.int64, psycopg2._psycopg.AsIs)
 
 
 requests.get('http://127.0.0.1:3000/get_data_count', params={'label_name': 'positive','count': 1000 })
+requests.get('http://127.0.0.1:3000/get_data_count', params={'label_name': 'negative','count': 0 })
 
 
 from database_service import get_data
