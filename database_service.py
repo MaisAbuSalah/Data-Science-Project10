@@ -1,19 +1,10 @@
-#A) Get_data_count service from labels DB in postgres - Using REST API
-#Get data count in DB based on vars: 1) label_name (NOT optional) in data_input table
-#2) count (optional) get count based on a number, like requesting number of positive
-#texts in the first 1000 entries, then it stops. in case no number was sent to it, it 
-#should count all texts.
-# B) Get_data to request texts with classification/labeling, based on requested count/num
-#vars: count (NOT optional), sort_order (NOT optional) - ascending/descending based on 
-#input_date in data_input table - Using REST API
-#C) Use error-handling to avoid program crash during execution of A & B
-
-from flask import Flask  
+from flask import Flask,jsonify
 from flask import request
 import numpy as np
 import psycopg2
 import pandas as pd
 import datetime
+import requests
 from psycopg2.extensions import register_adapter, AsIs
 psycopg2.extensions.register_adapter(np.int64, psycopg2._psycopg.AsIs)
 
@@ -24,125 +15,137 @@ app = Flask(__name__)
 #default route to 127.0.0.1:3000
 @app.route('/', methods=['GET'])
 def home():
-	return "<h1> Welcome to my last Data Science Project </h1>"
+    return "<h1> Welcome to my last Data Science Project </h1>"
+
+
 
 #http://127.0.0.1:3000/get_data_count/label_name count
-@app.route('/get_data_count/<label_name>/<count>', methods=['GET'])
+@app.route('/get_data_count', methods=['GET'])
 
 #get data count
-		
-def get_data_count (label_name,count=0):
-	try:
-		connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
+def get_data_count ():
+    try:
+        i = 0
+        print("test 1")
+        #output = ""
+        label_name = str(request.args.get('label_name'))
+        print (label_name)
+        count = int(request.args.get('count', None))
+        #count = int(request.args.get('count'))
+        print (type(count))
+        print ('count: ' + str(count))
 
-		cursor=connection.cursor()
+        connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
 
-		print("connection is successful and cursor was created!")
+        cursor=connection.cursor()
 
-		if count == 0:
-			print ("will fetch all data")
+        print("connection is successful and cursor was created!")
+        
+        if count == 0:
+            print ("will fetch all data")
 
-			if label_name == 'positive':
-				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 1"
-				cursor.execute (get_data_query)
-				get_data_count_cursor = cursor.fetchall()
-				print ("positive records fetched successfully")
+            if label_name == 'positive':
+                get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 1"
+                cursor.execute (get_data_query)
+                get_data_count_cursor = cursor.fetchall()
+                print ("positive records fetched successfully")
 
-				i = len(get_data_count_cursor)
+                i = len(get_data_count_cursor)
 
-				print ('total number of positive labels =',i)
+                print ('total number of positive labels =',i)
 
-			else:
-				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 0"
-				cursor.execute (get_data_query)
-				get_data_count_cursor = cursor.fetchall()
-				print ("negative records fetched successfully")
+            else:
+                get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 0"
+                cursor.execute (get_data_query)
+                get_data_count_cursor = cursor.fetchall()
+                print ("negative records fetched successfully")
 
-				i = len(get_data_count_cursor)
-				#for entry in get_data_count_cursor:
-					#i+=1
-				print ('total number of negative labels =',i)
+                i = len(get_data_count_cursor)
+                #for entry in get_data_count_cursor:
+                #i+=1
+                print ('total number of negative labels =',i)
 
-		else:
-			print ("will fetch some data")
+        else:
+            print ("will fetch some data")
 
-			if label_name == 'positive':
+            if label_name == 'positive':
 
-				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 1"
-				cursor.execute (get_data_query)
-				get_data_count_cursor = cursor.fetchmany(count)
+                get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 1 AND label_id < %s"
+                cursor.execute (get_data_query,(count,))
+                #print('step2')
+                get_data_count_cursor = cursor.fetchmany(count)
+
+                i = len(get_data_count_cursor)
+                                #for entry in get_data_count_cursor:
+                                #i+=1
+                print ('total number of positive labels =',i)
+
+            else:
+                get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 0 AND label_id < %s"
+                cursor.execute (get_data_query,(count,))
+                print ('step3')
+                get_data_count_cursor = cursor.fetchmany(count)
+
+                i = len(get_data_count_cursor)
+                                #for entry in get_data_count_cursor:
+                                        #i+=1
+                print ('total number of negative labels =',i)
+
+        cursor.close()
+        connection.close()
+        print ("connection closed successfully")
+
+    except:
+        print('Unexpected Error! Please try again.')
+    return str(i)
 
 
-				i = len(get_data_count_cursor)
-				#for entry in get_data_count_cursor:
-					#i+=1
-				print ('total number of positive labels =',i)
 
-			else:
-				get_data_query = "SELECT * FROM data_labeling WHERE classification_num = 0"
-				cursor.execute (get_data_query)
-				get_data_count_cursor = cursor.fetchmany(count)
-
-				i = len(get_data_count_cursor)
-				#for entry in get_data_count_cursor:
-					#i+=1
-				print ('total number of negative labels =',i)
-
-		cursor.close()
-		connection.close()
-		print ("connection closed successfully")
-
-	except:
-	print('Unexpected Error! Please try again.')
-	return i
-
-
-
-
-#http://127.0.0.1:3000/get_data_count/label_name count
-@app.route('/get_data/<count>/<sort_order>', methods=['GET'])
+#http://127.0.0.1:3000/get_data/count sort_order
+@app.route('/get_data', methods=['GET'])
 
 #get data
 
+def get_data ():
+    try:
+        print ('Hi2')
+        get_data_cursor = ""
+        i = 0
+        count = int(request.args.get('count'))
+        print (count)
+        sort_order = str(request.args.get('sort_order'))
+        print(sort_order)
+        connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
 
-		
-def get_data (count,sort_order):
-	try:
+        cursor=connection.cursor()
 
-		connection=psycopg2.connect(user="postgres",password="password",host="127.0.0.1",port="5432",database="labels")
+        print("connection is successful and cursor was created!")
 
-		cursor=connection.cursor()
+        if sort_order == 'ASC':
+            print('asc if statement')
+            get_data_query = "SELECT data_input.text, data_labeling.classification_num FROM data_input INNER JOIN data_labeling ON data_input.id = d$
+            print ('selection was successful')
+            cursor.execute (get_data_query,(count,))
+            print ('cursor execute')
+            get_data_cursor = cursor.fetchmany(count)
+            print ("data fetched and sorted by time stamp ascending")
 
-		print("connection is successful and cursor was created!")
+        else:
+            get_data_query = "SELECT data_input.text, data_labeling.classification_num FROM data_input INNER JOIN data_labeling ON data_input.id = d$
+            cursor.execute (get_data_query, (count,))
+            get_data_cursor = cursor.fetchmany(count)
+            print ("data fetched and sorted by time stamp descending")
+        #get_data_array=pd.array(get_data_cursor)
+        cursor.close()
+        connection.close()
+        print ("connection closed successfully")
 
-		if sort_order == ASC:
-			get_data_query = "SELECT data_input.text, data_labeling.classification_num FROM data_input INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp ASC"
-			cursor.execute (get_data_query)
-			get_data_cursor = cursor.fetchall()
-			print ("data fetched and sorted by time stamp ascending")
+    except:
+        print('Unexpected Error! Please try again.')
 
-
-		else :
-			get_data_query = "SELECT data_input.text, data_labeling.classification_num FROM data_input INNER JOIN data_labeling ON data_input.id = data_labeling.label_id WHERE id < count ORDER BY data_labling.time_stamp DESC"
-			cursor.execute (get_data_query)
-			get_data_cursor = cursor.fetchall()
-			print ("data fetched and sorted by time stamp descending")
-
-		cursor.close()
-		connection.close()
-		print ("connection closed successfully")
-
-	except:
-		print('Unexpected Error! Please try again.')		
-			
-	return get_data_cursor
+    return jsonify(get_data_cursor)
 
 
-
-	
-
-	
-		
 #start database_service.py on port 3000
 if __name__ == "__main__":
-	app.run(debug=True, port=3000)
+    app.run(debug=True, port=3000)
